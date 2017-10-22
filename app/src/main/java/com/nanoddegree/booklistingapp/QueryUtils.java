@@ -25,6 +25,13 @@ public final class QueryUtils {
 
 
   private static final String LOG_TAG = "Log: ";
+  private static final int READ_TIMEOUT = 10000;
+  private static final int SET_CONNECTION_TIMEOUT = 15000;
+
+  private static final String KEY_ITEMS = "items";
+  private static final String KEY_TITLE = "title";
+  private static final String KEY_VOLUME_INFO = "volumeInfo";
+  private static final String KEY_AUTHORS = "authors";
 
   private static URL createUrl(String stringUrl) {
     URL url = null;
@@ -48,8 +55,8 @@ public final class QueryUtils {
     InputStream inputStream = null;
     try {
       urlConnection = (HttpURLConnection) url.openConnection();
-      urlConnection.setReadTimeout(10000 /* milliseconds */);
-      urlConnection.setConnectTimeout(15000 /* milliseconds */);
+      urlConnection.setReadTimeout(READ_TIMEOUT);
+      urlConnection.setConnectTimeout(SET_CONNECTION_TIMEOUT);
       urlConnection.setRequestMethod("GET");
       urlConnection.connect();
 
@@ -101,25 +108,24 @@ public final class QueryUtils {
 
       // Create a JSONObject from the JSON response string
       JSONObject baseJsonResponse = new JSONObject(bookJSON);
-      JSONArray bookArray = baseJsonResponse.getJSONArray("items");
 
-      for (int i = 0; i < bookArray.length(); i++) {
+      if (baseJsonResponse.has(KEY_ITEMS)) {
+        JSONArray bookArray = baseJsonResponse.optJSONArray(KEY_ITEMS);
 
-        JSONObject currentBook = bookArray.getJSONObject(i);
-        JSONObject volumeInfo = currentBook.getJSONObject("volumeInfo");
+        for (int i = 0; i < bookArray.length(); i++) {
 
-        String title = volumeInfo.getString("title");
-        JSONArray authorArray = volumeInfo.getJSONArray("authors");
-        String author = authorArray.getString(0);
+          JSONObject currentBook = bookArray.getJSONObject(i);
+          JSONObject volumeInfo = currentBook.getJSONObject(KEY_VOLUME_INFO);
 
-//        JSONObject getImageLinkObject = volumeInfo.getJSONObject("imageLinks");
-//        String url = getImageLinkObject.getString("smallThumbnail");
+          String title = volumeInfo.getString(KEY_TITLE);
+          JSONArray authorArray = volumeInfo.getJSONArray(KEY_AUTHORS);
+          String author = authorArray.getString(0);
 
-        Book book = new Book(title, author);
+          Book book = new Book(title, author);
 
-        books.add(book);
+          books.add(book);
+        }
       }
-
     } catch (JSONException e) {
       Log.e("QueryUtils", "Problem parsing the book JSON results", e);
     }
